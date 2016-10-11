@@ -1,0 +1,219 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<script src="data.js"></script>
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/paper-styles/typography.html">
+
+<dom-module id="val-display">
+	<template>
+		<style>
+			:host {
+				display:block;
+				position: absolute;
+				left:50%;
+				top:50%;
+				width: 90vw;
+				height: 90vh;
+				transform: translate3d(-50%,-50%,0);
+			}
+			.content {
+				display:flex;
+				flex-wrap: wrap;
+				transition: all 500ms ease;
+			}
+			svg {
+				width: 100%;
+				height: auto;
+			}
+			.vertline {
+				stroke:#eaf3f5;
+				stroke-width:1;
+			}
+			.horzline {
+				stroke:#bfbebe;
+				stroke-width:1;
+			}
+			.zerohline {
+				stroke:#5b8598;
+			}
+			.zerovline {
+				stroke:#5b8598;
+			}
+			#gridlines text {
+				text-shadow: -1px -1px 1px black;
+				fill: rgba(255,255,255,0.75);
+				font-size: 3vh;
+			}
+			#sliders {
+				display: flex;
+				position: absolute;
+				bottom: 0;
+				padding: 0 1vw;
+				width: 100%;
+			}
+			#sliders>* {
+				margin: auto;
+			}
+			.datachunk {
+				fill:none;
+				stroke:red;
+				stroke-width:4;
+				opacity:0.7;
+
+			}
+			.datachunk:nth-child(1) {
+				stroke:green;
+			}
+			.datachunk:nth-child(2) {
+				stroke:teal;
+			}
+			.datachunk:nth-child(3) {
+				stroke:maroon;
+			}
+		</style>
+		<svg preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"  width$="[[wh.x]]" height$="[[wh.y]]" id="svgInterface" shape-rendering="geometricPrecision">
+			<g id="gridlines">
+			<g id="vertlines">
+
+			</g>
+			<g id="horzlines"></g>
+			</g>
+			<g id="datalines"></g>
+			</g>
+		</svg>
+		<div id="sliders">
+			<div>Lifetime: <span id="lifetimeLabel" class="caption">[[lifetimeVal]]</span>
+			<paper-slider id="lifetime" min="5" max="50" pin value="{{lifetimeVal}}"></paper-slider>
+			</div>
+			<div>Curve: <span id="curveLabel" class="caption">[[curveVal]]%</span>
+				<paper-slider id="curve" min="1" max="99" pin value="{{curveVal}}"></paper-slider>
+			</div>
+			<div>Refill: <span id="refillLabel" class="caption">[[refillVal]]</span>
+				<paper-slider id="refill" min="5" max="5000" pin value="{{refillVal}}"></paper-slider>
+			</div>
+			<div>Delay: <span id="delayLabel" class="caption">[[delayVal]]</span>
+			<paper-slider id="delay" min="1" max="50" pin value="{{delayVal}}"></paper-slider>
+			</div>
+		</div>
+	</template>
+
+	<script>
+		(function() {
+			'use strict';
+			var gui = require('nw.gui');
+			var win = gui.Window.get();
+			Polymer({
+				ready: function () {
+					this.dataChange();
+
+				},
+				is: 'val-display',
+				properties: {
+					wh: {
+						type: Object,
+						value: {x:"100px",y:"100px"}
+					},
+					scales: {
+						type: Object,
+						value: {x:800,y:600},
+						observer: 'scaleChange'
+					},
+					data: {
+						type: Object,
+						value: {},
+					},
+					lifetimeVal: {
+						type: Number,
+						value:10,
+						observer: 'dataChange'
+					},
+					curveVal: {
+						type: Number,
+						value:10,
+						observer: 'dataChange'
+					},
+					refillVal: {
+						type: Number,
+						value:10,
+						observer: 'dataChange'
+					},
+					delayVal: {
+						type: Number,
+						value:10,
+						observer: 'dataChange'
+					}
+				},
+				dataChange: function(data) {
+					data = this.data = nw.process.mainModule.exports.feedback({lifetime:this.lifetimeVal,curve:100/this.curveVal,refill:this.refillVal,delay:this.delayVal});
+					var arrmin = function(arr){return Math.min.apply(null, arr)},
+					arrmax = function(arr){return Math.max.apply(null, arr)};
+					var spreadsmin = [];
+					var spreadsmax = [];
+					var widths = [];
+					var results = [];
+					for (var chunk in data) {
+						spreadsmin.push(arrmin(data[chunk]));
+						spreadsmax.push(arrmax(data[chunk]));
+						widths.push(data[chunk].length);
+					}
+					results = [arrmin(spreadsmin),arrmax(spreadsmax),arrmax(widths)];
+					var workarea = nw.Screen.screens[0].work_area;
+					var maxY = workarea.height-workarea.y;
+					var maxX = workarea.width-workarea.x;
+					win.width = parseInt(0.9*maxX);
+					win.x = parseInt(0.05*maxX);
+					win.height = parseInt(0.9*maxY);
+					win.y = parseInt(0.05*maxY);
+					var meanval = (results[1]-results[0])/10;
+					var pow = 0;
+					var vertDiv = 0;
+					while (arrmax([Math.pow(10,pow),meanval,Math.pow(10,pow+1)])==meanval) {
+						pow++;
+					}
+					var vertStep = Math.pow(10,pow+1);
+					vertDiv = Math.floor(results[1]/Math.pow(10,pow+1))+1;
+					var vertRatio = (0.80*maxY)/(vertStep*vertDiv);
+					this.scales = {x:0.85*maxX,y:0.85*maxY};
+					var leftShift = 0.05;
+					var xStep = 0;
+					var hlines = [];
+					var vlines = [];
+					for (var i = vertDiv-1; i >-1; i--) {
+						hlines.push('<line class="horzline val-display '+(i==0?'zerohline':'')+'" x1="'+leftShift*maxX+'" y1="'+(vertDiv-i)*vertStep*vertRatio+'" x2="'+0.85*maxX+'" y2="'+(vertDiv-i)*vertStep*vertRatio+'" /><text class="vertText val-display" text-anchor="end" x="'+0.8*leftShift*maxX+'" y="'+((vertDiv-i)*vertStep*vertRatio+16*vertRatio)+'" font-family="Verdana" font-size="'+32*vertRatio+'">'+i*vertStep+'</text>');
+					}
+					xStep = (0.8*maxX)/results[2];
+					for (var i = 0; i < results[2]+1; i++) {
+						vlines.push('<line class="vertline val-display '+(i==0?'zerovline':'')+'" x1="'+(leftShift*maxX+xStep*i)+'" y1="0" x2="'+(leftShift*maxX+xStep*i)+'" y2="'+0.85*maxY+'" />');
+					}
+					this.$.horzlines.innerHTML = hlines.join('');
+					this.$.vertlines.innerHTML = vlines.join('');
+					var datalines = [];
+					var dataline = '';
+					for (var chunk in data) {
+						dataline = '<path ';
+						dataline +=  'id="data_'+chunk+'" class="datachunk val-display" d="';
+						for (var i = 0; i < data[chunk].length; i++) {
+							dataline += i===0?'M'+(leftShift*maxX)+','+((vertDiv*vertStep)-data[chunk][i])*vertRatio+' ':'L'+(leftShift*maxX+i*xStep)+','+((vertDiv*vertStep)-data[chunk][i])*vertRatio+' ';
+						}
+						datalines.push(dataline+='" />');
+					}
+					this.$.datalines.innerHTML = datalines.join('');
+				},
+				scaleChange: function() {
+					this.$.svgInterface.setAttribute('viewBox','0 0 '+this.scales.x+' '+this.scales.y);
+					this.set('wh.x',this.scales.x+'px');
+					this.set('wh.y',this.scales.y+'px');
+					var vertL = this.$.vertlines;
+					vertL.innerHTML = '';
+				}
+			});
+		})();
+	</script>
+</dom-module>
