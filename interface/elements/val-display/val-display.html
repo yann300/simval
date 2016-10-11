@@ -19,8 +19,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				position: absolute;
 				left:50%;
 				top:50%;
-				width: 90vw;
-				height: 90vh;
+				width: 96vw;
+				height: 96vh;
 				transform: translate3d(-50%,-50%,0);
 			}
 			.content {
@@ -29,7 +29,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				transition: all 500ms ease;
 			}
 			svg {
-				width: 100%;
+				position: absolute;
+				left: 5%;
+				width: 90%;
 				height: auto;
 			}
 			.vertline {
@@ -92,8 +94,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 			<div>Lifetime: <span id="lifetimeLabel" class="caption">[[lifetimeVal]]</span>
 			<paper-slider id="lifetime" min="5" max="50" pin value="{{lifetimeVal}}"></paper-slider>
 			</div>
-			<div>Curve: <span id="curveLabel" class="caption">[[curveVal]]%</span>
-				<paper-slider id="curve" min="1" max="99" pin value="{{curveVal}}"></paper-slider>
+			<div>Curve: <span id="curveLabel" class="caption">[[curveVal]]</span>
+				<paper-slider id="curve" min="10" max="150" pin value="{{curveVal}}"></paper-slider>
 			</div>
 			<div>Refill: <span id="refillLabel" class="caption">[[refillVal]]</span>
 				<paper-slider id="refill" min="5" max="5000" pin value="{{refillVal}}"></paper-slider>
@@ -151,7 +153,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					}
 				},
 				dataChange: function(data) {
-					data = this.data = nw.process.mainModule.exports.feedback({lifetime:this.lifetimeVal,curve:100/this.curveVal,refill:this.refillVal,delay:this.delayVal});
+					data = this.data = nw.process.mainModule.exports.feedback({lifetime:this.lifetimeVal,curve:this.curveVal/100,refill:this.refillVal,delay:this.delayVal});
 					var arrmin = function(arr){return Math.min.apply(null, arr)},
 					arrmax = function(arr){return Math.max.apply(null, arr)};
 					var spreadsmin = [];
@@ -190,7 +192,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					}
 					xStep = (0.8*maxX)/results[2];
 					for (var i = 0; i < results[2]+1; i++) {
-						vlines.push('<line class="vertline val-display '+(i==0?'zerovline':'')+'" x1="'+(leftShift*maxX+xStep*i)+'" y1="0" x2="'+(leftShift*maxX+xStep*i)+'" y2="'+0.85*maxY+'" />');
+						var txt = (i>0 && i< results[2]+1 && i % 5 === 0)?'<text class="vertText val-display" text-anchor="middle" x="'+(leftShift*maxX+xStep*i)+'" y="'+0.85*maxY+'" font-family="Verdana" font-size="'+32*vertRatio+'">'+i+'</text>':'';// console.log(i);
+						vlines.push('<line class="vertline val-display '+(i==0?'zerovline':'')+'" x1="'+(leftShift*maxX+xStep*i)+'" y1="0" x2="'+(leftShift*maxX+xStep*i)+'" y2="'+0.85*maxY+'" />'+txt);
 					}
 					this.$.horzlines.innerHTML = hlines.join('');
 					this.$.vertlines.innerHTML = vlines.join('');
