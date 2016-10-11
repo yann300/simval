@@ -67,17 +67,41 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 				fill:none;
 				stroke:red;
 				stroke-width:4;
-				opacity:0.7;
+				opacity:1;
 
 			}
-			.datachunk:nth-child(1) {
+			.datachunkgroup:nth-child(1) .datachunk{
 				stroke:green;
 			}
-			.datachunk:nth-child(2) {
+			.datachunkgroup:nth-child(2) .datachunk{
 				stroke:teal;
 			}
-			.datachunk:nth-child(3) {
+			.datachunkgroup:nth-child(3) .datachunk {
 				stroke:maroon;
+			}
+			.datachunkgroup .circlepointertext {
+				paint-order: stroke;
+				stroke:white;
+				stroke-width:1vh;
+			}
+			.datachunkgroup:nth-child(1) .circlepointertext {
+				fill:green;
+			}
+			.datachunkgroup:nth-child(2) .circlepointertext {
+				fill:teal;
+			}
+			.datachunkgroup:nth-child(3) .circlepointertext {
+				fill:maroon;
+			}
+			.circlepointercircle {
+				fill:#000;
+				fill-opacity:0;
+			}
+			.circlepointertext {
+				transform: scale(0);
+			}
+			.circlepointer:hover .circlepointertext {
+				transform: scale(1);
 			}
 		</style>
 		<svg preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"  width$="[[wh.x]]" height$="[[wh.y]]" id="svgInterface" shape-rendering="geometricPrecision">
@@ -199,13 +223,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 					this.$.vertlines.innerHTML = vlines.join('');
 					var datalines = [];
 					var dataline = '';
+					var circles = [];
 					for (var chunk in data) {
-						dataline = '<path ';
+						circles = [];
+						dataline = '<g class="datachunkgroup val-display"><path ';
 						dataline +=  'id="data_'+chunk+'" class="datachunk val-display" d="';
-						for (var i = 0; i < data[chunk].length; i++) {
-							dataline += i===0?'M'+(leftShift*maxX)+','+((vertDiv*vertStep)-data[chunk][i])*vertRatio+' ':'L'+(leftShift*maxX+i*xStep)+','+((vertDiv*vertStep)-data[chunk][i])*vertRatio+' ';
+						for (var i = 0, txt, xshift, yshift; i < data[chunk].length; i++) {
+							txt = Math.round(data[chunk][i]*100)/100;
+							xshift = (leftShift*maxX+i*xStep);
+							yshift = ((vertDiv*vertStep)-data[chunk][i])*vertRatio;
+							dataline += i===0?'M'+xshift+','+yshift+' ':'L'+xshift+','+yshift+' ';
+							circles.push('<g class="circlepointer val-display"><circle class="circlepointercircle val-display" cx="'+xshift+'" cy="'+yshift+'" r="'+0.45*xStep+'" /><text class="circlepointertext val-display" text-anchor="middle" x="'+xshift+'" y="'+yshift+'">'+txt+'</text></g>')
 						}
-						datalines.push(dataline+='" />');
+						datalines.push(dataline+='" />'+circles.join('')+'</g>');
 					}
 					this.$.datalines.innerHTML = datalines.join('');
 				},
