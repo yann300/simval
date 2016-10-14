@@ -1,10 +1,2 @@
-refill;account3
-block;12
-tx;account1;account2;300
-block;5
-tx;account2;account1;100
-block;10
-refill;account1
-block;12
-
+block;40
 

@@ -3,6 +3,10 @@ function blocks () {
 
   this.incr = function () {
     this.block++
+    this.blockAdded(this.block)
+  }
+
+  this.blockAdded = function (nb) {
   }
 }
 

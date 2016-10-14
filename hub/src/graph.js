@@ -27,16 +27,10 @@ module.exports = {
     })
 
     var array = []
-    for (var i = 0; i < points.length; i++) {
-      // console.log(i + ' ' + points[i] / height)
+    for (var i = 0; i < points.length; i++) {     
       array.push(points[i])
       graph.addPoint(i, points[i] / height)
     }
-
-    console.log('\n')
-    console.log(account + ':')
-    console.log(graph.toString())
-    console.log('\n')
     callback(array)
   }
 }

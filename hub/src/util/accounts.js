@@ -5,36 +5,49 @@ module.exports = {
   refillAmount: null,
   refillDelay: null,
 
-  refill: function (account, blocks, accounts) {
-    var events = accounts[account].events
-    if (events.length === 0 || blocks.block - accounts[account].lastRefill > this.refillDelay) {
-      var event = {
-        type: 'refill',
-        block: blocks.block,
-        amount: this.refillAmount
-      }
-      events.push(event)
-      accounts[account].lastRefill = blocks.block
-      accounts[account].events = events
-    }
-  },
-
-  retrieveAllAccounts: function () {
-    var accounts = {}
-    var txs = helpers.readFile('./hub/data/transactions.txt')
-    txs = txs.split('\n')
-    txs.map(function (item, i) {
-      if (item.indexOf('tx') === 0 || item.indexOf('refill') === 0) {
-        item = item.split(';')
-        if (item[1]) {
-          accounts[item[1]] = {events: []}
-        }
-        if (item[2]) {
-          accounts[item[2]] = {events: []}
-        }
+  retrieveAccounts: function () {
+    var actors = {}
+    var dirs = helpers.readDir('./hub/data/actors')
+    dirs.map(function (item, i) {
+      if (item.endsWith('.txt')) {
+        var actor = new Actor(item.replace('.txt', ''), './hub/data/actors/' + item)
+        actors[actor.name] = actor
       }
     })
-    return accounts
+    return actors
+  },
+
+  actorStories: function () {
+    var actorsStories = {}
+    var dirs = helpers.readDir('./hub/data/actors')
+    dirs.map(function (item, i) {
+      var actorName = item.replace('.txt', '')
+      var stories = helpers.readFile('./hub/data/actors/' + item)
+      if (stories.indexOf('_') !== -1) {
+        stories = stories.split('_')
+        stories.map(function (item, i) {
+          if (item.trim() !== '') {
+            if (!actorsStories[actorName]) {
+              actorsStories[actorName] = []
+            }
+            actorsStories[actorName].push(new ActorStory(item.trim()))
+          }
+        })
+      }
+    })
+    return actorsStories
+  },
+
+  refill: function (account, blocks, accounts) {
+    var events = accounts[account].events
+    var event = {
+      type: 'refill',
+      block: blocks.block,
+      amount: this.refillAmount
+    }
+    events.push(event)
+    accounts[account].lastRefill = blocks.block
+    accounts[account].events = events
   },
 
   refillAccounts: function (blocks, accounts) {
@@ -45,7 +58,6 @@ module.exports = {
 
   getBalance: function (account, accounts, blocks) {
     var totalBalance = 0
-    // console.log('block ' + blocks.block + ' ' + account)
     accounts[account].events.map(function (item, i) {
       if (item.type === 'refill' || item.type === 'add') {
         var decrea = curve.currentBalanceState(item.block, blocks)
@@ -85,4 +97,16 @@ module.exports = {
     }
     accounts[account].events.push(event)
   }
+}
+
+function Actor (name, file) {
+  this.name = name
+  this.file = file
+  this.events = []
+}
+
+function ActorStory (story) {
+  story = story.split('\n')
+  this.loopTimer = parseInt(story[0])
+  this.story = story[1]
 }
